@@ -1,0 +1,50 @@
+pipeline {  
+    environment {
+    registry = "<dockerhubuserid>/<reponame>"
+    registryCredential = 'dockerhub'
+    dockerImage = ''
+  }  
+  
+  agent any  
+  
+  stages {
+      
+    stage('Cloning Git') {
+      steps {
+        git branch: 'master', url: 'https://github.com/berry2012/jenkins-container-docker-builder.git'
+      }
+    }
+    
+    stage('Test: Change Directory') {
+      steps{
+        sh "ls -la"
+        sh "cd docker-test"
+        sh "ls -Art | tail -n 1 #check latest file"
+      }
+    }
+      
+    stage('Building image') {
+      steps{
+        script {
+          dockerImage = docker.build registry + ":${env.BUILD_ID}", "./docker-test"
+        }
+      }
+    }
+    
+    stage('Push Image') {
+      steps{
+        script {
+          docker.withRegistry( '', registryCredential ) {
+            dockerImage.push()
+          }
+        }
+      }
+    }
+    
+    stage('Clean Up: Remove Unused docker image') {
+      steps{
+        sh "docker rmi $registry:${env.BUILD_ID}"
+      }
+    }
+  }
+}
