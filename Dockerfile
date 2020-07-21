@@ -1,5 +1,8 @@
-FROM jenkins/jenkins:lts
+FROM jenkins
 USER root
+
+ENV DEBIAN_FRONTEND="noninteractive"
+
 RUN apt update \
     && apt upgrade -y \
     && apt install -y apt-transport-https ca-certificates curl unzip gnupg-agent jq software-properties-common --no-install-recommends \
@@ -12,4 +15,4 @@ RUN apt update \
     && apt clean && apt autoclean
 
 RUN usermod -a -G docker jenkins
-USER jenkins
+USER jenkins # drop back to the regular jenkins user - good practice
