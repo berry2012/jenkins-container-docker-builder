@@ -7,6 +7,7 @@ Run Jenkins as a Docker container to build docker images using Jenkins Pipeline
 ## or Build with tools like AWS CodeBuild
 
 ## Running jenkins with docker from host:
+### Remember to map a volume
 `docker run --name jenkins-docker -p 8080:8080 -v /var/run/docker.sock:/var/run/docker.sock jenkins-docker:dev`
 
 ## list containers
