@@ -1,0 +1,53 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2&
+      - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
+      - echo $CODEBUILD_SOURCE_VERSION        #default from Codebuild
+      - echo $CODEBUILD_WEBHOOK_TRIGGER
+      - | # detect branch that triggered this build
+        OPTION1=$(echo $CODEBUILD_WEBHOOK_TRIGGER | cut -d '/' -f2)
+        if [[ $CODEBUILD_SOURCE_VERSION != $OPTION1 ]]; then
+            echo "triggered by Bitbucket or Github"
+          BRANCH=$OPTION1
+        fi
+        
+        if [[ $CODEBUILD_SOURCE_VERSION != $OPTION1 ]]; then
+            if [[ -z "$CODEBUILD_WEBHOOK_TRIGGER" ]]; then
+                echo "Disregard. It is triggered by AWS Codebuild"
+                BRANCH=$CODEBUILD_SOURCE_VERSION
+                echo $BRANCH
+            fi
+        fi
+      - echo $BRANCH        
+
+  pre_build: 
+    commands: 
+    - echo Logging in to Amazon ECR.... 
+    - aws --version
+    - $(aws ecr get-login --no-include-email --region $AWSREGION)
+    - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+    - IMAGE_TAG=${COMMIT_HASH:=$BRANCH}
+    - REPOSITORY_URI=$ECR_URI
+  build: 
+    commands:
+    - echo Build started on `date` 
+    - echo Building the Docker image... 
+    - docker build -t $REPOSITORY_URI:$BRANCH .
+    - docker tag $REPOSITORY_URI:$BRANCH $REPOSITORY_URI:$IMAGE_TAG 
+  post_build: 
+    commands: 
+    - echo Build completed on `date` 
+    - echo pushing to repo
+    - docker push $REPOSITORY_URI:$IMAGE_TAG
+    - docker push $REPOSITORY_URI:$BRANCH
+
+cache:
+  paths:
+  # template for any kind of packages  
+    - '/root/.m2/**/*'
+    - '/root/.cache/pip' 
+    - '/root/.gradle/**/*'    
+    - '/root/.cache/pip'    
