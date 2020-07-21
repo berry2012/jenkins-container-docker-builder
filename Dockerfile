@@ -1,4 +1,4 @@
-FROM jenkins:lts
+FROM jenkins/jenkins:lts
 USER root
 
 ENV DEBIAN_FRONTEND="noninteractive"
