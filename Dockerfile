@@ -14,6 +14,7 @@ RUN apt update \
     && apt install docker-ce docker-ce-cli containerd.io -y \
     && apt clean && apt autoclean
 
+# RUN groupadd -r jenkins -g 901 && useradd -u 901 -r -g jenkins
 RUN usermod -a -G docker jenkins
-USER jenkins # drop back to the regular jenkins user - good practice
+USER jenkins 
 
